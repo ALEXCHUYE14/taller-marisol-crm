@@ -27,6 +27,23 @@
       font-size: 15px;
     }
   }
+  /*
+    Safari de iPhone ignora el ancho del contenedor en los campos de fecha (tienen un ancho propio) y el
+    campo se sale de su marco. Se fuerza a respetarlo; el selector de fecha nativo sigue funcionando.
+  */
+  input[type="date"] {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    -webkit-appearance: none;
+    appearance: none;
+    text-align: left;
+  }
+  input[type="date"]::-webkit-date-and-time-value {
+    text-align: left;
+    min-height: 1.2em;
+  }
 }
 
 @layer utilities {

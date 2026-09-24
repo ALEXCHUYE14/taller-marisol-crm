@@ -54,11 +54,11 @@ export function PeriodFilter({
 
       {isRange ? (
         <div className="grid grid-cols-1 gap-3 rounded-2xl border border-warmgray-200 bg-white p-3 sm:grid-cols-2">
-          <label className="space-y-1.5 text-sm font-medium text-warmgray-700">
+          <label className="block min-w-0 space-y-1.5 text-sm font-medium text-warmgray-700">
             Desde
             <Input type="date" max={today} value={custom.from} onChange={(e) => e.target.value && onCustom({ ...custom, from: e.target.value })} />
           </label>
-          <label className="space-y-1.5 text-sm font-medium text-warmgray-700">
+          <label className="block min-w-0 space-y-1.5 text-sm font-medium text-warmgray-700">
             Hasta
             <Input type="date" max={today} value={custom.to} onChange={(e) => e.target.value && onCustom({ ...custom, to: e.target.value })} />
           </label>

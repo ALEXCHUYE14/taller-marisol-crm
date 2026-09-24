@@ -31,7 +31,7 @@ export function ClosingTab({ today }: { today: string }) {
     <div className="space-y-5">
       <Card>
         <CardContent className="grid grid-cols-1 items-end gap-3 pt-4 sm:grid-cols-[minmax(0,16rem)_1fr]">
-          <Field label="Día a cerrar">
+          <Field label="Día a cerrar" className="min-w-0">
             <Input type="date" max={today} value={safeDate} onChange={(e) => e.target.value && setDate(e.target.value)} />
           </Field>
           <p className="text-sm first-letter:uppercase text-warmgray-600">{formatDayLong(safeDate)}</p>
