@@ -72,7 +72,7 @@ export function MeasuresForm<T extends FieldValues>({ register, errors, name, va
   const filled = values ? Object.values(values).filter((v) => v && String(v).trim()).length : 0;
 
   return (
-    <div className={cn("grid gap-4", !compact && "md:grid-cols-[200px_1fr]")}>
+    <div className={cn("grid grid-cols-1 gap-4", !compact && "md:grid-cols-[200px_minmax(0,1fr)]")}>
       <div className={cn("relative rounded-2xl border border-warmgray-200 bg-white p-3", compact ? "hidden" : "hidden md:block")}>
         <div className="h-[340px]">
           <Silhouette active={active} />

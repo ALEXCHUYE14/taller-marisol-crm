@@ -38,7 +38,7 @@ export function BusinessInfoForm({ settings }: { settings: BusinessSettings }) {
   };
 
   return (
-    <div className="grid gap-5 lg:grid-cols-[1fr_340px]">
+    <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
       <Card>
         <CardHeader icon={<Building2 />} title="Datos comerciales" description="Aparecen en tickets, recibos y mensajes de WhatsApp." />
         <CardContent>
@@ -46,7 +46,7 @@ export function BusinessInfoForm({ settings }: { settings: BusinessSettings }) {
             <Field label="Nombre del negocio" htmlFor="business_name" required error={errors.business_name?.message}>
               <Input id="business_name" icon={<Building2 />} aria-invalid={!!errors.business_name} {...register("business_name")} />
             </Field>
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <Field label="Teléfono / WhatsApp" htmlFor="phone" error={errors.phone?.message}>
                 <Input id="phone" inputMode="tel" icon={<Phone />} placeholder="987 654 321" {...register("phone")} />
               </Field>

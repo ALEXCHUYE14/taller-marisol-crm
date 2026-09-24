@@ -50,7 +50,7 @@ export function DigitalPaymentsSection({ settings }: { settings: BusinessSetting
   };
 
   return (
-    <div className="grid gap-5 lg:grid-cols-[1fr_320px]">
+    <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
       <div className="space-y-5">
         <Card>
           <CardHeader
@@ -59,7 +59,7 @@ export function DigitalPaymentsSection({ settings }: { settings: BusinessSetting
             description="Sube la imagen del QR que te da la app de Yape y de Plin. Se mostrará al cobrar y en los tickets."
           />
           <CardContent>
-            <div className="grid gap-5 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
               {(["yape", "plin"] as const).map((kind) => (
                 <div key={kind} className="space-y-2">
                   <div className="flex items-center gap-2">

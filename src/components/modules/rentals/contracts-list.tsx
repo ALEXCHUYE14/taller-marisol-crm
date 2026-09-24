@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { AlertTriangle, CalendarClock, MessageCircle, MoreHorizontal, PackageCheck, Receipt, Undo2, XCircle } from "lucide-react";
+import { AlertTriangle, CalendarClock, MoreHorizontal, PackageCheck, Receipt, Shirt, Undo2, XCircle } from "lucide-react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { Button, ConfirmDialog, EmptyState, Segmented, Skeleton, StatusBadge } from "@/components/ui";
+import { Button, ConfirmDialog, EmptyState, Segmented, Skeleton, StatusBadge, WhatsAppIcon } from "@/components/ui";
 import { useCrudMutation, useRentals } from "@/hooks/use-data";
 import { useSettings } from "@/hooks/use-settings";
 import { paymentsService, rentalsService, type RentalListFilter } from "@/services";
@@ -69,7 +69,7 @@ export function ContractsList() {
       ) : !data?.length ? (
         <EmptyState icon={<CalendarClock />} title="Sin contratos en esta vista" description="Los alquileres registrados aparecerán aquí ordenados por fecha de devolución." />
       ) : (
-        <div className="grid gap-3 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
           {data.map((r, i) => {
             const d = daysUntil(r.return_date);
             const urgent = r.status === "Con Retraso" || (r.status === "Entregado" && d <= 0);
@@ -81,55 +81,59 @@ export function ContractsList() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: Math.min(i * 0.03, 0.3) }}
                 className={cn(
-                  "rounded-2xl border bg-white p-3 shadow-soft",
+                  "min-w-0 rounded-2xl border bg-white p-3 shadow-soft sm:p-4",
                   urgent ? "border-burgundy-100 ring-1 ring-burgundy/20" : soon ? "border-amber-100" : "border-warmgray-200",
                 )}
               >
                 <div className="flex gap-3">
-                  <div className="size-20 shrink-0 overflow-hidden rounded-xl bg-warmgray-100">
-                    {r.item?.images?.[0] && (
+                  <div className="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-warmgray-100 text-warmgray-300 sm:size-20">
+                    {r.item?.images?.[0] ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={r.item.images[0]} alt="" className="h-full w-full object-cover" />
+                    ) : (
+                      <Shirt className="size-7" aria-hidden />
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-start justify-between gap-2">
-                      <p className="truncate font-semibold text-warmgray-800">{r.client?.full_name ?? "Cliente"}</p>
-                      <StatusBadge status={r.status} />
+                    <div className="flex flex-wrap items-start justify-between gap-x-2 gap-y-1">
+                      <p className="line-clamp-2 min-w-0 flex-[1_1_8rem] break-words font-semibold leading-snug text-warmgray-800">
+                        {r.client?.full_name ?? "Cliente"}
+                      </p>
+                      <StatusBadge status={r.status} className="shrink-0" />
                     </div>
-                    <p className="truncate text-sm text-warmgray-600">
+                    <p className="mt-0.5 truncate text-sm text-warmgray-600">
                       {r.item?.name} · T{r.item?.size}
                     </p>
-                    <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-warmgray-500">
-                      <span>
-                        {formatDate(r.pickup_date, "dd/MM")} → <b className={cn(urgent && "text-burgundy", soon && "text-amber-700")}>{formatDate(r.return_date, "dd/MM")}</b>
-                      </span>
-                      {(r.status === "Entregado" || r.status === "Con Retraso") && (
-                        <span className={cn("flex items-center gap-1 font-semibold", urgent ? "text-burgundy" : soon ? "text-amber-700" : "text-warmgray-500")}>
-                          {urgent && <AlertTriangle className="size-3.5" />}
-                          {relativeDayLabel(r.return_date)}
-                        </span>
-                      )}
-                      <span>{formatMoney(r.total_amount)}</span>
-                      <span>Garantía: {r.guarantee_status}</span>
-                    </div>
                   </div>
                 </div>
-                <div className="mt-3 flex gap-2">
+                <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl bg-warmgray-100/60 px-3 py-2 text-xs text-warmgray-500">
+                  <span className="whitespace-nowrap">
+                    {formatDate(r.pickup_date, "dd/MM")} → <b className={cn(urgent && "text-burgundy", soon && "text-amber-700")}>{formatDate(r.return_date, "dd/MM")}</b>
+                  </span>
+                  {(r.status === "Entregado" || r.status === "Con Retraso") && (
+                    <span className={cn("flex items-center gap-1 whitespace-nowrap font-semibold", urgent ? "text-burgundy" : soon ? "text-amber-700" : "text-warmgray-500")}>
+                      {urgent && <AlertTriangle className="size-3.5" />}
+                      {relativeDayLabel(r.return_date)}
+                    </span>
+                  )}
+                  <span className="whitespace-nowrap font-semibold text-warmgray-700">{formatMoney(r.total_amount)}</span>
+                  <span className="whitespace-nowrap">Garantía: {r.guarantee_status}</span>
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
                   {r.status === "Reservado" && (
-                    <Button size="sm" className="flex-1" onClick={() => setDelivering(r)}>
+                    <Button size="sm" className="min-w-[6rem] flex-1" onClick={() => setDelivering(r)}>
                       <PackageCheck /> Entregar
                     </Button>
                   )}
                   {(r.status === "Entregado" || r.status === "Con Retraso") && (
-                    <Button size="sm" className="flex-1" onClick={() => setReturning(r)}>
+                    <Button size="sm" className="min-w-[6rem] flex-1" onClick={() => setReturning(r)}>
                       <Undo2 /> Recibir
                     </Button>
                   )}
-                  <Button size="sm" variant="whatsapp" className="flex-1" onClick={() => remind(r)}>
-                    <MessageCircle /> Recordar
+                  <Button size="sm" variant="whatsapp" className="min-w-[6rem] flex-1" onClick={() => remind(r)}>
+                    <WhatsAppIcon /> Recordar
                   </Button>
-                  <Button size="icon-sm" variant="outline" aria-label="Más acciones" onClick={() => setMenu(r)}>
+                  <Button size="icon-sm" variant="outline" className="ml-auto" aria-label="Más acciones" onClick={() => setMenu(r)}>
                     <MoreHorizontal />
                   </Button>
                 </div>

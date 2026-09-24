@@ -40,7 +40,7 @@ export function ReceiptGenerator() {
   }, [kind, id, rentals.data, orders.data, payments.data]);
 
   return (
-    <div className="grid gap-5 lg:grid-cols-[1fr_360px]">
+    <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
       <Card className="self-start">
         <CardHeader
           icon={<Receipt />}

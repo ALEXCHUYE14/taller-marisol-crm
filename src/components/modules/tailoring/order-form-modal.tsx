@@ -87,7 +87,7 @@ export function OrderFormModal({
         </>
       }
     >
-      <form onSubmit={onSubmit} className="grid gap-6 lg:grid-cols-2">
+      <form onSubmit={onSubmit} className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div className="space-y-4">
           <Field label="Cliente" required error={errors.client_id?.message}>
             <ClientPicker

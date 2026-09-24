@@ -349,7 +349,7 @@ export function RentalWizard({
                     {templates.rentalReminder(created.client?.full_name ?? "", created.return_date, created.item?.name ?? "prenda", businessName)}
                   </p>
                 </div>
-                <div className="grid gap-2 sm:grid-cols-2">
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                   <Button variant="whatsapp" size="lg" onClick={sendReminder}>
                     <MessageCircle /> Enviar Recordatorio por WhatsApp
                   </Button>
