@@ -15,6 +15,12 @@ export function whatsappUrl(phone: string | null | undefined, message: string): 
   return number ? `https://wa.me/${number}?text=${text}` : `https://wa.me/?text=${text}`;
 }
 
+/** WhatsApp de soporte técnico del sistema (ayuda para acceder al CRM). */
+export const SUPPORT_PHONE = "51924996961";
+
+export const supportUrl = (message = "Hola, tengo problemas para acceder al CRM del Taller Marisol.") =>
+  whatsappUrl(SUPPORT_PHONE, message);
+
 export function openWhatsApp(phone: string | null | undefined, message: string) {
   window.open(whatsappUrl(phone, message), "_blank", "noopener,noreferrer");
 }

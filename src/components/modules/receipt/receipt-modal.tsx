@@ -1,15 +1,15 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Download, FileText, Printer, Share2 } from "lucide-react";
+import { Download, FileText, Printer } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Modal } from "@/components/ui";
+import { Button, Modal, WhatsAppIcon } from "@/components/ui";
 import { useSettings } from "@/hooks/use-settings";
 import { receiptToText } from "@/lib/receipt";
 import { openWhatsApp } from "@/lib/whatsapp";
 import type { ReceiptData } from "@/types";
 import { ReceiptTicket } from "./receipt-ticket";
-import { downloadReceiptPdf, downloadReceiptPng, shareReceiptImage } from "./receipt-actions";
+import { downloadReceiptPdf, downloadReceiptPng, printReceipt, shareReceiptImage } from "./receipt-actions";
 
 /** Barra de acciones del ticket: imprimir, PDF, imagen y WhatsApp */
 export function ReceiptToolbar({ data, targetRef }: { data: ReceiptData; targetRef: React.RefObject<HTMLDivElement> }) {
@@ -25,7 +25,7 @@ export function ReceiptToolbar({ data, targetRef }: { data: ReceiptData; targetR
       await fn(node);
     } catch (e) {
       console.error(e);
-      toast.error("No se pudo generar el archivo. Revisa que las imágenes (logo/QR) carguen correctamente.");
+      toast.error("No se pudo generar el ticket. Revisa que las imágenes (logo/QR) carguen correctamente.");
     } finally {
       setBusy(null);
     }
@@ -33,7 +33,7 @@ export function ReceiptToolbar({ data, targetRef }: { data: ReceiptData; targetR
 
   return (
     <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-      <Button variant="outline" onClick={() => window.print()}>
+      <Button variant="outline" loading={busy === "print"} onClick={() => run("print", printReceipt)}>
         <Printer /> Imprimir
       </Button>
       <Button variant="outline" loading={busy === "pdf"} onClick={() => run("pdf", (n) => downloadReceiptPdf(n, data.number))}>
@@ -53,7 +53,7 @@ export function ReceiptToolbar({ data, targetRef }: { data: ReceiptData; targetR
           })
         }
       >
-        <Share2 /> WhatsApp
+        <WhatsAppIcon /> WhatsApp
       </Button>
     </div>
   );

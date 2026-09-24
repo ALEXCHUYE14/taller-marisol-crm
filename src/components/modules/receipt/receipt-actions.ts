@@ -2,8 +2,23 @@
 
 import { toPng } from "html-to-image";
 
-async function nodeToPng(node: HTMLElement) {
-  return toPng(node, { pixelRatio: 2.5, backgroundColor: "#ffffff", cacheBust: true });
+/**
+ * Captura el ticket completo como PNG. Se fuerza el tamaño real del nodo (aunque el modal tenga scroll) y se
+ * quita sombra/margen/transformaciones: si no, la imagen sale recortada o desplazada.
+ */
+export async function nodeToPng(node: HTMLElement) {
+  if (typeof document !== "undefined" && document.fonts?.ready) await document.fonts.ready;
+  const width = Math.ceil(node.offsetWidth);
+  const height = Math.ceil(Math.max(node.offsetHeight, node.scrollHeight));
+  return toPng(node, {
+    pixelRatio: 3,
+    backgroundColor: "#ffffff",
+    cacheBust: true,
+    skipFonts: true, // el ticket usa fuentes del sistema (Courier New / Georgia)
+    width,
+    height,
+    style: { margin: "0", boxShadow: "none", transform: "none" },
+  });
 }
 
 async function dataUrlToFile(dataUrl: string, filename: string) {
@@ -41,6 +56,47 @@ export async function downloadReceiptPdf(node: HTMLElement, filename: string) {
   const url = URL.createObjectURL(file);
   download(url, file.name);
   setTimeout(() => URL.revokeObjectURL(url), 5_000);
+}
+
+/**
+ * Imprime el ticket a 80 mm usando la misma imagen que el PDF/PNG (queda idéntico y completo).
+ * Antes se imprimía el nodo dentro del modal con scroll y salía cortado.
+ */
+export async function printReceipt(node: HTMLElement) {
+  const png = await nodeToPng(node);
+  const img = new Image();
+  img.src = png;
+  await img.decode();
+  const heightMm = Math.ceil((img.height / img.width) * 80);
+
+  const iframe = document.createElement("iframe");
+  iframe.setAttribute("aria-hidden", "true");
+  iframe.style.cssText = "position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden";
+  document.body.appendChild(iframe);
+  const doc = iframe.contentDocument;
+  const win = iframe.contentWindow;
+  if (!doc || !win) {
+    iframe.remove();
+    throw new Error("No se pudo preparar la impresión");
+  }
+  doc.open();
+  doc.write(
+    `<!doctype html><html><head><meta charset="utf-8"><title>Ticket</title><style>` +
+      `@page{size:80mm ${heightMm}mm;margin:0}html,body{margin:0;padding:0;background:#fff}` +
+      `img{display:block;width:80mm;height:${heightMm}mm}</style></head><body><img alt="Ticket"></body></html>`,
+  );
+  doc.close();
+  const target = doc.querySelector("img");
+  if (!target) {
+    iframe.remove();
+    throw new Error("No se pudo preparar la impresión");
+  }
+  target.src = png;
+  await target.decode();
+  win.addEventListener("afterprint", () => iframe.remove(), { once: true });
+  win.focus();
+  win.print();
+  setTimeout(() => iframe.remove(), 120_000); // respaldo si el navegador no dispara afterprint
 }
 
 /**

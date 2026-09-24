@@ -7,3 +7,4 @@ export * from "./misc";
 export * from "./modal";
 export * from "./tabs";
 export * from "./image-dropzone";
+export * from "./whatsapp-icon";

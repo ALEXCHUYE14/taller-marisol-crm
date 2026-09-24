@@ -1,15 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { motion } from "framer-motion";
-import { Lock, Mail } from "lucide-react";
+import Image from "next/image";
+import { Lock, Mail, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { getSupabase } from "@/lib/supabase/client";
 import { loginSchema, type LoginFormValues } from "@/lib/validations";
-import { Button, Field, Input } from "@/components/ui";
+import { supportUrl } from "@/lib/whatsapp";
+import { Button, Field, Input, WhatsAppIcon } from "@/components/ui";
+
+/** Difumina los cuatro bordes de la portada para que se funda con el fondo de la página. */
+const FADE = "#000 6%, #000 94%, transparent";
+const FADE_EDGES: CSSProperties = {
+  WebkitMaskImage: `linear-gradient(to right, transparent, ${FADE}), linear-gradient(to bottom, transparent, ${FADE})`,
+  maskImage: `linear-gradient(to right, transparent, ${FADE}), linear-gradient(to bottom, transparent, ${FADE})`,
+  WebkitMaskComposite: "source-in",
+  maskComposite: "intersect",
+};
 
 export function LoginForm() {
   const router = useRouter();
@@ -34,22 +45,28 @@ export function LoginForm() {
   };
 
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-linen linen-texture px-4 py-10">
+    <main className="flex min-h-dvh flex-col items-center justify-center gap-5 bg-[#F2F1EC] px-4 py-6">
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35 }}
-        className="w-full max-w-sm"
+        className="flex w-full flex-col items-center gap-5"
       >
-        <div className="mb-8 text-center">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/icon.svg" alt="" className="mx-auto mb-4 size-16 rounded-2xl shadow-lift" />
-          <h1 className="font-serif text-3xl font-semibold text-olive">Taller Marisol</h1>
-          <p className="mt-1 text-sm text-warmgray-500">Costura · Alquiler de ternos · Confección a medida</p>
-        </div>
+        <h1 className="sr-only">Taller de Costura Marisol · Ingresar</h1>
+        {/* Portada de la marca: los bordes se difuminan para fundirse con el fondo en cualquier pantalla */}
+        <Image
+          src="/img/portada.jpg"
+          alt="Taller de Costura Marisol · Moda y arte textil"
+          width={1376}
+          height={768}
+          priority
+          sizes="(min-width: 768px) 720px, 100vw"
+          className="pointer-events-none h-auto max-h-[34dvh] w-auto max-w-[min(100vw-2rem,44rem)] select-none"
+          style={FADE_EDGES}
+        />
         <form
           onSubmit={handleSubmit(onSubmit)}
-          className="space-y-4 rounded-2xl border border-warmgray-200 bg-white p-6 shadow-soft"
+          className="w-full max-w-sm space-y-4 rounded-2xl border border-warmgray-200 bg-white p-6 shadow-soft"
         >
           <Field label="Correo" htmlFor="email" error={errors.email?.message}>
             <Input
@@ -78,10 +95,21 @@ export function LoginForm() {
             Ingresar al taller
           </Button>
         </form>
-        <p className="mt-6 text-center text-xs text-warmgray-500">
-          Los usuarios se crean en Supabase → Authentication → Users.
-        </p>
+        <div className="w-full max-w-sm space-y-1 text-center">
+          <p className="flex items-center justify-center gap-1.5 text-sm text-warmgray-600">
+            <ShieldCheck className="size-4 shrink-0" aria-hidden /> Acceso exclusivo del personal autorizado
+          </p>
+          <a
+            href={supportUrl()}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-2 text-sm font-semibold text-emerald-800 underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600"
+          >
+            <WhatsAppIcon className="size-5 shrink-0 text-[#25D366]" />
+            ¿Problemas para acceder? Contactar soporte
+          </a>
+        </div>
       </motion.div>
-    </div>
+    </main>
   );
 }
