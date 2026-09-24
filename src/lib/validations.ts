@@ -1,8 +1,10 @@
 import { z } from "zod";
+import { limaToday } from "@/lib/cash";
 import {
   GUARANTEE_STATUSES,
   INVENTORY_CATEGORIES,
   INVENTORY_STATUSES,
+  MANUAL_EXPENSE_CATEGORIES,
   PAYMENT_METHODS,
   SERVICE_TYPES,
   TAILORING_STATUSES,
@@ -148,6 +150,19 @@ export const paymentSchema = z.object({
   reference_code: optionalText(100),
 });
 export type PaymentFormValues = z.infer<typeof paymentSchema>;
+
+// ---------- Egresos (caja) ----------
+export const expenseSchema = z.object({
+  expense_date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Elige la fecha")
+    .refine((d) => d <= limaToday(), "No puede ser una fecha futura"),
+  category: z.enum(MANUAL_EXPENSE_CATEGORIES),
+  description: optionalText(300),
+  amount: money.refine((v) => v > 0, "Monto mayor a 0"),
+  payment_method: z.enum(PAYMENT_METHODS),
+});
+export type ExpenseFormValues = z.infer<typeof expenseSchema>;
 
 // ---------- Login ----------
 export const loginSchema = z.object({

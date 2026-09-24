@@ -1,4 +1,4 @@
-import { LayoutDashboard, Scissors, Settings, Shirt, Users, type LucideIcon } from "lucide-react";
+import { LayoutDashboard, Scissors, Settings, Shirt, Users, Wallet, type LucideIcon } from "lucide-react";
 
 export interface NavItem {
   href: string;
@@ -12,6 +12,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/alquileres", label: "Alquileres", short: "Alquiler", icon: Shirt },
   { href: "/confecciones", label: "Confecciones", short: "Taller", icon: Scissors },
   { href: "/clientes", label: "Clientes", short: "Clientes", icon: Users },
+  { href: "/caja", label: "Caja", short: "Caja", icon: Wallet },
   { href: "/ajustes", label: "Ajustes", short: "Ajustes", icon: Settings },
 ];
 

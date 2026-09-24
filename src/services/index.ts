@@ -6,3 +6,5 @@ export * from "./rentals.service";
 export * from "./tailoring.service";
 export * from "./payments.service";
 export * from "./dashboard.service";
+export * from "./expenses.service";
+export * from "./cash.service";

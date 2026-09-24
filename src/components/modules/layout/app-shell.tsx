@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import { LogOut } from "lucide-react";
 import { getSupabase } from "@/lib/supabase/client";
 import { useSettings } from "@/hooks/use-settings";
@@ -98,18 +98,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </header>
 
       <main className="lg:pl-64">
-        <AnimatePresence mode="wait" initial={false}>
-          <motion.div
-            key={pathname}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -6 }}
-            transition={{ duration: 0.18, ease: "easeOut" }}
-            className="mx-auto max-w-7xl px-4 pb-32 pt-5 sm:px-6 lg:pb-12 lg:pt-8"
-          >
-            {children}
-          </motion.div>
-        </AnimatePresence>
+        {/*
+          Transición de página en CSS puro. Antes se usaba AnimatePresence mode="wait" con las rutas de Next:
+          si la animación de salida no terminaba (móvil, app en segundo plano) la página nueva nunca aparecía
+          y quedaba la pantalla en blanco.
+        */}
+        <div key={pathname} className="page-enter mx-auto max-w-7xl px-4 pb-32 pt-5 sm:px-6 lg:pb-12 lg:pt-8">
+          {children}
+        </div>
       </main>
 
       {/* Bottom Navigation estilo App (móvil / tablet vertical) */}
@@ -117,7 +113,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         className="fixed inset-x-0 bottom-0 z-40 border-t border-warmgray-200 bg-white/95 backdrop-blur pb-safe lg:hidden"
         aria-label="Navegación principal"
       >
-        <ul className="mx-auto grid max-w-xl grid-cols-5">
+        <ul className="mx-auto grid max-w-xl grid-cols-6">
           {NAV_ITEMS.map(({ href, short, icon: Icon }) => {
             const active = isActive(pathname, href);
             return (

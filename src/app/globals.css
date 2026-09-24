@@ -47,6 +47,26 @@
   }
 }
 
+/* ---------- Transición de página (CSS: no depende de JS, nunca deja la pantalla en blanco) ---------- */
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.page-enter {
+  animation: page-enter 0.2s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .page-enter {
+    animation: none;
+  }
+}
+
 /* ---------- Impresión de tickets (80 mm) ---------- */
 @media print {
   @page {

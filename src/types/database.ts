@@ -36,6 +36,18 @@ export type PaymentMethod = "Efectivo" | "Yape" | "Plin" | "Transferencia" | "Ta
 
 export type PaymentType = "Adelanto" | "Pago Total" | "Garantía" | "Liquidación Saldo";
 
+export type ExpenseCategory =
+  | "Tela"
+  | "Hilos e insumos"
+  | "Botones y accesorios"
+  | "Alquiler del local"
+  | "Servicios"
+  | "Sueldos y pagos"
+  | "Transporte"
+  | "Mantenimiento de máquinas"
+  | "Devolución de garantía"
+  | "Otros";
+
 /** Medidas estándar de sastrería (cm). Se guardan como texto para permitir "" (vacío). */
 export type Measures = {
   pecho: string;
@@ -132,6 +144,53 @@ export type PaymentRow = {
   created_at: string | null;
 };
 
+export type ExpenseRow = {
+  id: string;
+  /** Fecha del egreso (DATE, "YYYY-MM-DD", hora de Lima) */
+  expense_date: string;
+  category: ExpenseCategory;
+  description: string | null;
+  amount: number;
+  payment_method: PaymentMethod;
+  receipt_url: string | null;
+  rental_id: string | null;
+  created_at: string | null;
+};
+
+export type CashClosingRow = {
+  id: string;
+  closing_date: string;
+  opening_cash: number;
+  income_total: number;
+  guarantees_in: number;
+  expenses_total: number;
+  guarantees_out: number;
+  cash_in: number;
+  cash_out: number;
+  expected_cash: number;
+  counted_cash: number;
+  /** Columna generada: counted_cash - expected_cash */
+  difference: number;
+  by_method: Record<string, number>;
+  notes: string | null;
+  created_at: string | null;
+};
+
+/** Vista `receivables`: alquileres y confecciones con saldo pendiente */
+export type ReceivableRow = {
+  kind: "Alquiler" | "Confección";
+  id: string;
+  client_id: string | null;
+  client_name: string | null;
+  client_phone: string | null;
+  description: string | null;
+  total: number;
+  paid: number;
+  balance: number;
+  due_date: string | null;
+  status: string | null;
+};
+
 // ---------- Utilidades Insert / Update ----------
 type Optional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
 
@@ -152,6 +211,26 @@ export type TailoringOrderInsert = Optional<
 export type PaymentInsert = Optional<
   PaymentRow,
   "id" | "rental_id" | "order_id" | "payment_method" | "reference_code" | "payment_type" | "created_at"
+>;
+
+export type ExpenseInsert = Optional<
+  ExpenseRow,
+  "id" | "expense_date" | "description" | "payment_method" | "receipt_url" | "rental_id" | "created_at"
+>;
+export type CashClosingInsert = Optional<
+  Omit<CashClosingRow, "difference">,
+  | "id"
+  | "opening_cash"
+  | "income_total"
+  | "guarantees_in"
+  | "expenses_total"
+  | "guarantees_out"
+  | "cash_in"
+  | "cash_out"
+  | "expected_cash"
+  | "by_method"
+  | "notes"
+  | "created_at"
 >;
 
 type Rel = {
@@ -231,8 +310,25 @@ export type Database = {
           },
         ]
       >;
+      expenses: TableDef<
+        ExpenseRow,
+        ExpenseInsert,
+        Partial<ExpenseRow>,
+        [
+          {
+            foreignKeyName: "expenses_rental_id_fkey";
+            columns: ["rental_id"];
+            isOneToOne: false;
+            referencedRelation: "rentals";
+            referencedColumns: ["id"];
+          },
+        ]
+      >;
+      cash_closings: TableDef<CashClosingRow, CashClosingInsert, Partial<Omit<CashClosingRow, "difference">>>;
     };
-    Views: { [_ in never]: never };
+    Views: {
+      receivables: { Row: ReceivableRow; Relationships: [] };
+    };
     Functions: {
       mark_overdue_rentals: { Args: Record<string, never>; Returns: number };
     };

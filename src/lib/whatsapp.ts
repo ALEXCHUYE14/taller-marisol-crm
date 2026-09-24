@@ -40,6 +40,8 @@ export const templates = {
     `Hola ${firstName(client)}, la devolución de ${garment} venció el ${formatDateLong(
       returnDate,
     )}. Por favor acércate al taller a la brevedad. ${business}.`,
+  paymentDue: (client: string, balance: string, concept: string, business = "Taller Marisol") =>
+    `Hola ${firstName(client)}, te recordamos que tienes un saldo pendiente de ${balance} por ${concept}. ¡Gracias! ${business}.`,
   orderReady: (client: string, orderNumber: number, business = "Taller Marisol") =>
     `Hola ${firstName(client)}, ¡tu prenda (orden N° ${orderNumber}) ya está lista para recoger! Te esperamos. ${business}.`,
   orderFitting: (client: string, orderNumber: number, business = "Taller Marisol") =>

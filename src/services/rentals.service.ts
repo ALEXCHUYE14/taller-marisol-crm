@@ -1,6 +1,10 @@
 import { getSupabase } from "@/lib/supabase/client";
 import type { GuaranteeStatus, PaymentMethod, RentalStatus, RentalWithRelations } from "@/types";
 import type { RentalFormValues } from "@/lib/validations";
+import { addDays, limaToday } from "@/lib/cash";
+import { getErrorMessage } from "@/lib/utils";
+import { isMissingCajaSetup } from "./cash.service";
+import { expensesService } from "./expenses.service";
 import { paymentsService } from "./payments.service";
 
 const SELECT =
@@ -115,13 +119,46 @@ export const rentalsService = {
       });
   },
 
-  /** Recepción de la prenda devuelta; define qué pasa con la garantía. */
-  async markReturned(id: string, guarantee: GuaranteeStatus, notes?: string): Promise<void> {
+  /**
+   * Recepción de la prenda devuelta; define qué pasa con la garantía.
+   * Si la garantía se devuelve al cliente, se anota esa salida de dinero en Caja (no cuenta como gasto).
+   * La devolución del contrato nunca falla por culpa de Caja: si no se pudo anotar, se avisa con `refundNote`.
+   */
+  async markReturned(
+    id: string,
+    guarantee: GuaranteeStatus,
+    notes?: string,
+    refund?: { amount: number; method: PaymentMethod; description: string },
+  ): Promise<{ refundNote: string | null }> {
     const { error } = await getSupabase()
       .from("rentals")
       .update({ status: "Devuelto", guarantee_status: guarantee, ...(notes ? { notes } : {}) })
       .eq("id", id);
     if (error) throw error;
+
+    if (!refund || refund.amount <= 0) return { refundNote: null };
+    const entry = { rentalId: id, amount: refund.amount, method: refund.method, description: refund.description };
+    try {
+      await expensesService.createGuaranteeRefund(entry);
+      return { refundNote: null };
+    } catch (e) {
+      if (isMissingCajaSetup(e)) {
+        return {
+          refundNote:
+            "Devolución registrada, pero no se anotó la devolución de la garantía en Caja porque falta ejecutar supabase/caja.sql.",
+        };
+      }
+      // Hoy ya tiene cierre de caja: la salida de dinero se anota en la caja de mañana
+      if (/ya tiene cierre/i.test(getErrorMessage(e))) {
+        try {
+          await expensesService.createGuaranteeRefund({ ...entry, date: addDays(limaToday(), 1) });
+          return { refundNote: "La caja de hoy ya estaba cerrada: la devolución de la garantía se anotó en la caja de mañana." };
+        } catch (e2) {
+          return { refundNote: `Devolución registrada, pero no se pudo anotar la garantía devuelta en Caja: ${getErrorMessage(e2)}` };
+        }
+      }
+      return { refundNote: `Devolución registrada, pero no se pudo anotar la garantía devuelta en Caja: ${getErrorMessage(e)}` };
+    }
   },
 
   async cancel(id: string): Promise<void> {

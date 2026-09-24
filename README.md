@@ -2,7 +2,7 @@
 
 CRM web responsivo (mobile-first) para el taller de costura y alquiler de ternos **"Taller de Costura Marisol"**: alquileres, confección a medida con tablero Kanban, fichas de medidas, caja del día (Yape, Plin, efectivo), tickets imprimibles y recordatorios por WhatsApp.
 
-**Stack:** Next.js 14 (App Router) · React 18 · TypeScript estricto · Tailwind CSS v3 · Radix UI (patrón shadcn/ui) · Lucide · Framer Motion · Supabase (PostgreSQL + Auth + Storage + Realtime) · TanStack Query v5 · React Hook Form + Zod · Recharts.
+**Stack:** Next.js 16 (App Router) · React 18 · TypeScript estricto · Tailwind CSS v3 · Radix UI (patrón shadcn/ui) · Lucide · Framer Motion · Supabase (PostgreSQL + Auth + Storage + Realtime) · TanStack Query v5 · React Hook Form + Zod · Recharts.
 
 ---
 
@@ -12,6 +12,7 @@ CRM web responsivo (mobile-first) para el taller de costura y alquiler de ternos
 1. Crea un proyecto en [supabase.com](https://supabase.com) (el plan gratuito basta).
 2. **SQL Editor → New query** → pega el contenido de `supabase/schema.sql` → **Run**.
    Crea las 6 tablas, índices, triggers, políticas RLS, Realtime y los **3 buckets de Storage** con sus permisos.
+   > **Si tu base ya estaba creada** (instalación anterior), ejecuta solo `supabase/caja.sql`: agrega el módulo **Caja** (egresos, cierres y saldos por cobrar) sin tocar tus datos. Es seguro correrlo más de una vez.
 3. (Opcional) Ejecuta `supabase/seed.sql` para cargar clientes y prendas de ejemplo.
 4. **Authentication → Users → Add user**: crea el usuario del taller (correo y contraseña, marca *Auto Confirm User*).
 5. **Project Settings → API**: copia la *Project URL* y la *anon public key*.
@@ -44,6 +45,7 @@ Abre http://localhost:3000 e inicia sesión. Si falta `.env.local`, la app te ll
 | **Alquileres** | `/alquileres` | *Contratos* (activos, en poder del cliente, vencidos, historial; entregar, recibir devolución con estado de garantía, cancelar, ticket) y *Catálogo* con filtro rápido por talla, color, categoría y disponibilidad + fotos. Asistente de salida en 4 pasos: cliente (o creación rápida) → prenda con miniatura → fechas, garantía y cobro → **Enviar recordatorio por WhatsApp**. |
 | **Confecciones** | `/confecciones` | Tablero Kanban `Recibido ➔ En Corte ➔ En Costura ➔ Prueba ➔ Listo (➔ Entregado)`. Arrastrar y soltar en escritorio; columnas deslizables y botón "Avanzar" en móvil. Fotos de referencia, medidas específicas, cobro del saldo, aviso por WhatsApp. |
 | **Clientes** | `/clientes` | Búsqueda, alta/edición, historial y **Ficha de Medidas interactiva** (10 medidas; al tocar un campo se resalta en la silueta dónde medir). |
+| **Caja** | `/caja` | *Resumen* de ingresos, egresos y utilidad por **Hoy · Semana (lun–dom) · Quincena (1–15 / 16–fin) · Mes · Calendario** con gráfico día por día y exportación a **Excel (CSV)** y **PDF** · *Ingresos* cobro por cobro (cliente, concepto, medio, hora) · *Egresos*: compra de tela, hilos, servicios, sueldos… con foto del comprobante · *Por cobrar*: clientes que dejaron solo una parte pagada, con recordatorio por WhatsApp · *Cierre*: arqueo de efectivo (esperado vs contado), fondo inicial sugerido, historial y reapertura. Todos los cortes de día usan la hora de Perú (America/Lima). |
 | **Ajustes** | `/ajustes` | *Datos comerciales* (nombre, dirección, teléfono, RUC/DNI, leyenda) con vista previa en vivo del ticket · *Cobro digital*: drag-and-drop del QR de Yape, QR de Plin y logo, con previsualización en tiempo real de cómo lo ve el cliente · *Generador de ticket* 80 mm: imprimir, PDF, imagen o WhatsApp. |
 
 ## Storage (buckets)
@@ -60,12 +62,16 @@ Las fotos se comprimen en el navegador (máx. 1600 px, WebP) antes de subirlas. 
 - **Vencidos**: `mark_overdue_rentals()` marca *Con Retraso* los contratos cuya fecha de devolución pasó (zona America/Lima). Se ejecuta al abrir el dashboard; opcionalmente prográmalo con `pg_cron`.
 - `pending_balance` de las confecciones es una columna generada (`total_price - advance_payment`).
 - Cada cobro queda en `payments` (Adelanto, Pago Total, Garantía, Liquidación Saldo), que alimenta la caja del día.
+- **Caja:** ingresos del taller = pagos que no son garantía; la **garantía es dinero en custodia** (se cobra y se devuelve) y se muestra aparte. Al recibir una devolución con garantía *Devuelta* se anota esa salida en `expenses` (categoría *Devolución de garantía*, no cuenta como gasto). Utilidad = ingresos − egresos. Efectivo esperado del cierre = fondo inicial + cobrado en efectivo − pagado en efectivo.
+- **Cierres de caja** (`cash_closings`): uno por día, sin política de edición (solo se pueden reabrir). Un trigger impide crear, editar o borrar egresos de un día cerrado.
+- **Saldos por cobrar:** vista `receivables` (alquileres y confecciones con deuda; ignora garantías y contratos cancelados).
 
 ## Estructura (Clean Architecture)
 ```
 taller-marisol-crm/
 ├── supabase/
 │   ├── schema.sql              # DDL + RLS + triggers + Realtime + Storage buckets/políticas
+│   ├── caja.sql                # Módulo Caja (egresos, cierres, por cobrar) para bases ya creadas
 │   └── seed.sql                # Datos de demostración (opcional)
 ├── public/                     # icon.svg, manifest.webmanifest
 ├── scripts/package.sh          # Empaquetado .zip
@@ -76,7 +82,7 @@ taller-marisol-crm/
     │   │   ├── alquileres/  confecciones/  clientes/  ajustes/
     │   ├── login/  setup/
     │   ├── layout.tsx  providers.tsx  globals.css
-    ├── middleware.ts           # Sesión Supabase + protección de rutas
+    ├── proxy.ts                # Sesión Supabase + protección de rutas (antes middleware.ts)
     ├── components/
     │   ├── ui/                 # Base: Button, Input/Select/Textarea, Field, Badge/StatusBadge,
     │   │                       #       Card, Modal (bottom-sheet móvil), ConfirmDialog, Tabs,
@@ -87,6 +93,7 @@ taller-marisol-crm/
     │       ├── rentals/        # RentalsView, ContractsList, RentalWizard, InventoryCatalog, modales
     │       ├── tailoring/      # TailoringView, KanbanBoard, OrderFormModal, OrderDetailModal
     │       ├── clients/        # ClientsView, ClientFormModal, ClientDetailModal
+    │       ├── cash/           # CashView (pestañas), PeriodFilter, Summary/Incomes/Expenses/Receivables/Closing
     │       ├── receipt/        # ReceiptTicket, ReceiptModal/Toolbar, exportación PNG/PDF/compartir
     │       ├── shared/         # ClientPicker, PaymentMethodPicker (muestra el QR), MeasuresForm
     │       ├── layout/         # AppShell (sidebar + bottom navigation)
@@ -95,6 +102,8 @@ taller-marisol-crm/
     ├── lib/
     │   ├── supabase/           # client.ts (navegador, tipado), server.ts, middleware.ts, env.ts
     │   ├── validations.ts      # Esquemas Zod de todos los formularios
+    │   ├── cash.ts             # Lógica pura de Caja: hora de Lima, periodos, totales, cierre
+    │   ├── cash-export.ts      # Exportar movimientos a CSV (Excel) y resumen a PDF
     │   ├── receipt.ts  whatsapp.ts  format.ts  utils.ts
     ├── services/               # CRUD Supabase Database + Storage (un servicio por tabla)
     └── types/                  # database.ts (tipos por tabla SQL) + index.ts (dominio y constantes)

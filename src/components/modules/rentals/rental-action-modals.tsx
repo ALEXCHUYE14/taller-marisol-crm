@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Button, Field, Input, Modal, Textarea } from "@/components/ui";
+import { toast } from "sonner";
+import { Button, Field, Input, Modal, Select, Textarea } from "@/components/ui";
 import { useCrudMutation } from "@/hooks/use-data";
 import { paymentsService, rentalsService } from "@/services";
 import { formatMoney } from "@/lib/format";
-import { GUARANTEE_STATUSES, type GuaranteeStatus, type PaymentMethod, type RentalWithRelations } from "@/types";
+import { GUARANTEE_STATUSES, PAYMENT_METHODS, type GuaranteeStatus, type PaymentMethod, type RentalWithRelations } from "@/types";
 import { cn } from "@/lib/utils";
 import { PaymentMethodPicker } from "../shared/payment-method-picker";
 
@@ -84,15 +85,49 @@ const GUARANTEE_HELP: Record<GuaranteeStatus, string> = {
 export function ReturnRentalModal({ rental, onClose }: { rental: RentalWithRelations | null; onClose: () => void }) {
   const [guarantee, setGuarantee] = useState<GuaranteeStatus>("Devuelta");
   const [notes, setNotes] = useState("");
+  const [refund, setRefund] = useState(true);
+  const [refundMethod, setRefundMethod] = useState<PaymentMethod>("Efectivo");
+
+  const payments = useQuery({
+    queryKey: ["payments", "rental", rental?.id],
+    queryFn: () => paymentsService.byRental(rental!.id),
+    enabled: Boolean(rental),
+  });
+  const guaranteePayments = (payments.data ?? []).filter((p) => p.payment_type === "Garantía");
+  const guaranteePaid = guaranteePayments.reduce((s, p) => s + Number(p.amount), 0);
+  const paidWith = guaranteePayments[guaranteePayments.length - 1]?.payment_method;
+
   useEffect(() => {
     setGuarantee("Devuelta");
     setNotes(rental?.notes ?? "");
+    setRefund(true);
   }, [rental]);
 
-  const ret = useCrudMutation(() => rentalsService.markReturned(rental!.id, guarantee, notes.trim() || undefined), {
-    success: "Devolución registrada · prenda disponible",
-    onSuccess: onClose,
-  });
+  // La garantía se devuelve por el mismo medio con el que se cobró (editable)
+  useEffect(() => {
+    if (paidWith) setRefundMethod(paidWith);
+  }, [paidWith, rental?.id]);
+
+  const showRefund = guarantee === "Devuelta" && guaranteePaid > 0;
+  const refundEntry =
+    showRefund && refund && rental
+      ? {
+          amount: guaranteePaid,
+          method: refundMethod,
+          description: `Garantía devuelta · ${rental.client?.full_name ?? "Cliente"} · ${rental.item?.name ?? "Prenda"}`,
+        }
+      : undefined;
+
+  const ret = useCrudMutation(
+    () => rentalsService.markReturned(rental!.id, guarantee, notes.trim() || undefined, refundEntry),
+    {
+      success: "Devolución registrada · prenda disponible",
+      onSuccess: (result) => {
+        if (result.refundNote) toast.warning(result.refundNote, { duration: 9000 });
+        onClose();
+      },
+    },
+  );
 
   return (
     <Modal
@@ -113,7 +148,7 @@ export function ReturnRentalModal({ rental, onClose }: { rental: RentalWithRelat
     >
       <div className="space-y-4">
         <p className="text-sm text-warmgray-600">
-          Garantía cobrada: <b>{formatMoney(rental?.deposit_amount)}</b>. ¿Qué pasa con ella?
+          Garantía cobrada: <b>{formatMoney(payments.data ? guaranteePaid : rental?.deposit_amount)}</b>. ¿Qué pasa con ella?
         </p>
         <div className="space-y-2">
           {GUARANTEE_STATUSES.map((g) => (
@@ -135,6 +170,33 @@ export function ReturnRentalModal({ rental, onClose }: { rental: RentalWithRelat
             </button>
           ))}
         </div>
+        {showRefund && (
+          <div className="space-y-3 rounded-xl border border-warmgray-200 bg-white p-3">
+            <label className="flex cursor-pointer items-start gap-3">
+              <input
+                type="checkbox"
+                checked={refund}
+                onChange={(e) => setRefund(e.target.checked)}
+                className="mt-1 size-5 shrink-0 accent-olive"
+              />
+              <span className="text-sm">
+                <span className="font-semibold text-warmgray-800">Anotar la devolución de {formatMoney(guaranteePaid)} en Caja</span>
+                <span className="block text-xs text-warmgray-500">
+                  Sale dinero de la caja pero no cuenta como gasto. Así el efectivo del cierre cuadra.
+                </span>
+              </span>
+            </label>
+            {refund && (
+              <Field label="Devuelto por">
+                <Select value={refundMethod} onChange={(e) => setRefundMethod(e.target.value as PaymentMethod)}>
+                  {PAYMENT_METHODS.map((m) => (
+                    <option key={m}>{m}</option>
+                  ))}
+                </Select>
+              </Field>
+            )}
+          </div>
+        )}
         <Field label="Observaciones">
           <Textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Estado de la prenda, manchas, etc." />
         </Field>

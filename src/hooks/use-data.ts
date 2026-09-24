@@ -59,6 +59,7 @@ const ALL_DATA_KEYS: QueryKey[] = [
   ["rentals"],
   ["tailoring"],
   ["payments"],
+  ["caja"],
 ];
 
 export function useCrudMutation<TVars, TResult = unknown>(

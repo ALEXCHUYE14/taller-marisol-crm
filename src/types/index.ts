@@ -1,9 +1,12 @@
 import type {
   BusinessSettingsRow,
+  CashClosingRow,
   ClientRow,
+  ExpenseRow,
   InventoryRow,
   Measures,
   PaymentRow,
+  ReceivableRow,
   RentalRow,
   TailoringOrderRow,
 } from "./database";
@@ -17,6 +20,9 @@ export type InventoryItem = InventoryRow;
 export type Rental = RentalRow;
 export type TailoringOrder = TailoringOrderRow;
 export type Payment = PaymentRow;
+export type Expense = ExpenseRow;
+export type CashClosing = CashClosingRow;
+export type Receivable = ReceivableRow;
 
 /** Contrato de alquiler con su cliente y prenda (join) */
 export interface RentalWithRelations extends RentalRow {
@@ -60,6 +66,35 @@ export const PAYMENT_METHODS = ["Efectivo", "Yape", "Plin", "Transferencia", "Ta
 
 export const PAYMENT_TYPES = ["Adelanto", "Pago Total", "Garantía", "Liquidación Saldo"] as const;
 
+export const EXPENSE_CATEGORIES = [
+  "Tela",
+  "Hilos e insumos",
+  "Botones y accesorios",
+  "Alquiler del local",
+  "Servicios",
+  "Sueldos y pagos",
+  "Transporte",
+  "Mantenimiento de máquinas",
+  "Devolución de garantía",
+  "Otros",
+] as const;
+
+/** Categoría automática: dinero de garantías que se devuelve al cliente (no es un gasto del taller). */
+export const GUARANTEE_REFUND_CATEGORY = "Devolución de garantía" as const;
+
+/** Categorías que el usuario puede elegir al registrar un gasto (la devolución de garantía es automática). */
+export const MANUAL_EXPENSE_CATEGORIES = [
+  "Tela",
+  "Hilos e insumos",
+  "Botones y accesorios",
+  "Alquiler del local",
+  "Servicios",
+  "Sueldos y pagos",
+  "Transporte",
+  "Mantenimiento de máquinas",
+  "Otros",
+] as const;
+
 export const EMPTY_MEASURES: Measures = {
   pecho: "",
   cintura: "",
@@ -94,7 +129,7 @@ export const MEASURE_FIELDS: MeasureField[] = [
 ];
 
 // ---------- Tipos de soporte ----------
-export type StorageBucket = "rentals-gallery" | "tailoring-references" | "business-assets";
+export type StorageBucket = "rentals-gallery" | "tailoring-references" | "business-assets" | "expense-receipts";
 
 export interface DailyCash {
   total: number;
